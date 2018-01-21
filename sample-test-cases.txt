@@ -1,0 +1,37 @@
+Rate-Monotonic Scheduling sample test cases
+
+Enter the number of processes you want to schedule: 2
+Enter the time till you want to scheduling to happen: 130
+
+Enter the details of the processes: 
+Process 1: 
+Period: 50
+Processing time: 20
+Process 2:
+Period: 100
+Processing time: 35
+
+Enter the number of processes you want to schedule: 2
+Enter the time till you want to scheduling to happen: 150
+
+Enter the details of the processes: 
+Process 1: 
+Period: 50 
+Processing time: 25
+Process 2: 
+Period: 80
+Processing time: 35
+
+Enter the number of processes you want to schedule: 3
+Enter the time till you want to scheduling to happen: 301
+
+Enter the details of the processes: 
+Process 1: 
+Period: 50
+Processing time: 20
+Process 2: 
+Period: 100
+Processing time: 30
+Process 3: 
+Period: 150
+Processing time: 30
