@@ -1,0 +1,20 @@
+Process P1: processing time=25; deadline:50; period:50 joined the system at time 0.
+Process P2: processing time=35; deadline:80; period:80 joined the system at time 0.
+Process P1 starts execution at time 0.
+Process P1 finishes execution at time 25.
+Process P2 starts execution at time 26.
+Process P2 finishes execution at time 60.
+Process P1 starts execution at time 61.
+Process P1 finishes execution at time 85.
+Process P2 starts execution at time 86.
+Process P2 is preempted by Process P1 at time 100. Remaining processing time:20.
+Process P1 starts execution at time 101.
+Process P1 finishes execution at time 125.
+Process P2 resumes execution at time 126.
+Process P2 finishes execution at time 145.
+CPU is idle till time 149.
+Process P1 starts execution at time 150.
+Process P1 finishes execution at time 175.
+Process P2 starts execution at time 176.
+Process P2 finishes execution at time 210.
+Process P1 starts execution at time 211.

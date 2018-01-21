@@ -1,5 +1,5 @@
-Number of processes that missed their deadlines: 0
-Number of processes that successfully complete: 9
+Number of processes that missed their deadlines: 1
+Number of processes that successfully complete: 7
 
 Average waiting time for Process P1: 0
-Average waiting time for Process P2: 40
+Average waiting time for Process P2: 38

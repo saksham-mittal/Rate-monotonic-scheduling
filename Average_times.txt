@@ -1,0 +1,7 @@
+RMS algorithm(Input according to 'inp-params.txt'): 
+Average Time: 19
+Average Turnaround Time: 49
+
+EDF algorithm(Input according to 'inp-params.txt'): 
+Average Time: 14
+Average Turnaround Time: 44
