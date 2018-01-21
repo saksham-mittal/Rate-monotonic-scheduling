@@ -1,0 +1,5 @@
+Number of processes that missed their deadlines: 0
+Number of processes that successfully completed: 6
+Waiting time for each processes
+Waiting time for Process P1: 0
+Waiting time for Process P2: 80

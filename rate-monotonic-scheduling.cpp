@@ -7,14 +7,17 @@ class process {
 	public:
 		int m_id;				// Id of the process
 		int m_period;			// Time period of arrival of processes
-		int m_burstLeft;		// Burst time left	
+		int m_burstLeft;		// Burst time left
 		int m_processing;		// Processing time of process
-		int m_startTime;		// Start time of the process
+		int m_arrivalTime;		// Arrival time of process
+		int m_waitingTime;		// The waiting time it spends in ready queue
+		int m_noTimes;			// Number of times a process has to execute
 		bool m_isFinished;		// Whether the process is finished or not
+		bool m_isResume;		// Whether the process is resuming or not
 		// deadline of the processes is assumed to be same as m_period
 };
 
-queue <process> readyQueue;
+queue <process> readyQueue, dummyQueue;
 
 bool priority(const process &x, const process &y) {
 	return (x.m_period < y.m_period);
@@ -45,15 +48,9 @@ void printQueue() {
 
 int main(int argc, char const *argv[]) {
 	// Your code here
-	int noOfProcesses, t, time = 0, noDeadlinesMissed = 0;
-
-	cout << "-------------------------------------\n      Rate Monotonic Scheduling      \n-------------------------------------\n" << endl;
-
+	int noOfProcesses, totalNoOfTimes = 0, time = 0, noDeadlinesMissed = 0, idleTime = 0, noSuccessful = 0;
 	cout << "Enter the number of processes you want to schedule: ";
 	cin >> noOfProcesses;
-
-	cout << "Enter the time till you want to scheduling to happen: ";
-	cin >> t;
 	cout << endl;
 
 	// declaring an array of class process
@@ -68,8 +65,16 @@ int main(int argc, char const *argv[]) {
 		cout << "Processing time: ";
 		cin >> P[i].m_processing;
 		P[i].m_burstLeft = P[i].m_processing;
+		cout << "Number of times each process repeats: ";
+		cin >> P[i].m_noTimes;
 		P[i].m_isFinished = false;
+		P[i].m_isResume = false;
+		P[i].m_arrivalTime = 0;
+		P[i].m_waitingTime = 0;
+	}
 
+	for(int i=0; i<noOfProcesses; i++) {
+		totalNoOfTimes += P[i].m_noTimes;
 	}
 
 	// We are assuming that all processes arrive at t = 0
@@ -80,22 +85,28 @@ int main(int argc, char const *argv[]) {
 	// sort the ready queue
 	sortQueue();
 
-	// printQueue();
-
 	process current = readyQueue.front();
+	dummyQueue = readyQueue;
 	readyQueue.pop();
-	current.m_startTime = 1;
 
-	// printQueue();
+	ofstream RMLog,RMStat;
+	RMLog.open("RM-Log.txt");
+	RMStat.open("RM-Stats.txt");
 
-	cout << endl;
-	while(time <= t) {
+	while(!dummyQueue.empty()) {
+		RMLog << "Process P" << dummyQueue.front().m_id << ": processing time=" << dummyQueue.front().m_processing << "; deadline:"<< dummyQueue.front().m_period << "; period:" << dummyQueue.front().m_period << " joined the system at time 0." << endl;
+		dummyQueue.pop();
+	}
+
+	RMLog << "Process P" << current.m_id << " starts execution at time 0." << endl; 
+	while(totalNoOfTimes) {
 		time++;
 		bool flag = false;
 
 		// check if a new process has to be added in the ready queue
 		for(int i=0; i<noOfProcesses; i++) {
 			if(time % P[i].m_period == 0) {
+				P[i].m_arrivalTime = time;
 				readyQueue.push(P[i]);
 				flag = true;
 			}
@@ -107,13 +118,17 @@ int main(int argc, char const *argv[]) {
 
 		// check if burst time is over, else continue excecuting
 		if(current.m_burstLeft == 1) {
-			cout << current.m_startTime << " P" << current.m_id << " " << time << endl;
+			RMLog << "Process P" << current.m_id << " finishes execution at time " << time << "." << endl;
 			current.m_burstLeft--;
 			current.m_isFinished = true;
+			noSuccessful++;
+			totalNoOfTimes--;
 		} else {
 			// means current is excecuting if it is not finished
 			if(!current.m_isFinished) {
 				current.m_burstLeft--;
+			} else {
+				idleTime++;
 			}
 		}
 
@@ -123,27 +138,56 @@ int main(int argc, char const *argv[]) {
 				// and ready queue is not empty
 				current = readyQueue.front();
 				readyQueue.pop();
-				current.m_startTime = time;
+
+				P[current.m_id - 1].m_waitingTime +=  (time - current.m_arrivalTime);
+
+				if(idleTime > 0) {
+					RMLog << "CPU is idle till time " << time - 1 << "." << endl;
+					idleTime = 0;
+					if(current.m_isResume) {
+						RMLog << "Process P" << current.m_id << " resumes execution at time " << time << "." << endl; 
+					} else {
+						RMLog << "Process P" << current.m_id << " starts execution at time " << time << "." << endl; 
+					}
+				} else {
+					if(current.m_isResume) {
+						RMLog << "Process P" << current.m_id << " resumes execution at time " << time + 1 << "." << endl; 
+					} else {
+						RMLog << "Process P" << current.m_id << " starts execution at time " << time + 1 << "." << endl; 
+					}
+				}
 			} else if(readyQueue.front().m_period <= current.m_period) {
 				// Preempt the process if another higher priority process is present in the ready queue
 				// If while preempting the new process has same id, then deadline missed
 				if(readyQueue.front().m_id != current.m_id) {
+					RMLog << "Process P" << current.m_id << " is preempted by Process P" << readyQueue.front().m_id << " at time " << time << ". Remaining processing time:" << current.m_burstLeft << "." << endl;
+					RMLog << "Process P" << readyQueue.front().m_id << " starts execution at time " << time + 1 << "." << endl; 
+					current.m_arrivalTime = time;
+					current.m_isResume = true;
 					// if id is different, then only we push the current process
 					readyQueue.push(current);
 					// sort the ready queue
 					sortQueue();
 				} else {
 					noDeadlinesMissed++;
+					RMLog << "Process P" << current.m_id << " misses its deadline at time " << time << "." << endl;
+					RMLog << "Process P" << readyQueue.front().m_id << " starts execution at time " << time << "." << endl; 
 				}
-				cout << current.m_startTime << " P" << current.m_id << " " << time << endl;
 				current = readyQueue.front();
 				readyQueue.pop();
-				current.m_startTime = time;
+				P[current.m_id - 1].m_waitingTime +=  (time - current.m_arrivalTime);
 			}
 		}
 
 	}
-	cout << endl;
-	cout << "Number of deadlines missed: " << noDeadlinesMissed << endl;
+	RMLog.close();
+
+	RMStat << "Number of processes that missed their deadlines: " << noDeadlinesMissed << endl;
+	RMStat << "Number of processes that successfully complete: " << noSuccessful << endl << endl;
+	for(int i=0; i<noOfProcesses; i++) {
+		RMStat << "Average waiting time for Process P" << i + 1 << ": " << P[i].m_waitingTime/P[i].m_noTimes << endl;
+	}
+	RMStat.close();
+
 	return 0;
 }
