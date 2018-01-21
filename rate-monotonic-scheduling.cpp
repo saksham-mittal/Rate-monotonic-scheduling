@@ -5,9 +5,12 @@ using namespace std;
 
 class process {
 	public:
-		int m_id;		// Id of the process
-		int m_period;	// Time period of arrival of processes
-		int m_bursts;	// Processing time of process
+		int m_id;				// Id of the process
+		int m_period;			// Time period of arrival of processes
+		int m_burstLeft;		// Burst time left	
+		int m_processing;		// Processing time of process
+		int m_startTime;		// Start time of the process
+		bool m_isFinished;		// Whether the process is finished or not
 		// deadline of the processes is assumed to be same as m_period
 };
 
@@ -20,21 +23,29 @@ bool priority(const process &x, const process &y) {
 void sortQueue() {
 	vector<process> v;
 	while(!readyQueue.empty()) {   
-		v.push_back(*readyQueue.top());
-	    readyQueue.dequeue();
+		v.push_back(readyQueue.front());
+	    readyQueue.pop();
 	}
 
 	sort(v.begin(), v.end(), priority);
 
 	for(int i=0; i<v.size(); i++) {   
-		readyQueue.enqueue(v[i]);
+		readyQueue.push(v[i]);
 	}
+}
 
+void printQueue() {
+	queue <process> dummy;
+	dummy = readyQueue;
+	while(!dummy.empty()) {
+		cout << "P" << dummy.front().m_id << endl;
+		dummy.pop();
+	}
 }
 
 int main(int argc, char const *argv[]) {
 	// Your code here
-	int noOfProcesses, t, time = 0;
+	int noOfProcesses, t, time = 0, noDeadlinesMissed = 0;
 
 	cout << "-------------------------------------\n      Rate Monotonic Scheduling      \n-------------------------------------\n" << endl;
 
@@ -43,6 +54,7 @@ int main(int argc, char const *argv[]) {
 
 	cout << "Enter the time till you want to scheduling to happen: ";
 	cin >> t;
+	cout << endl;
 
 	// declaring an array of class process
 	process P[noOfProcesses];
@@ -54,7 +66,10 @@ int main(int argc, char const *argv[]) {
 		cout << "Period: ";
 		cin >> P[i].m_period;
 		cout << "Processing time: ";
-		cin >> P[i].m_bursts;
+		cin >> P[i].m_processing;
+		P[i].m_burstLeft = P[i].m_processing;
+		P[i].m_isFinished = false;
+
 	}
 
 	// We are assuming that all processes arrive at t = 0
@@ -65,42 +80,70 @@ int main(int argc, char const *argv[]) {
 	// sort the ready queue
 	sortQueue();
 
-	process current = readyQueue.pop();
-	cout << "1 ";
+	// printQueue();
+
+	process current = readyQueue.front();
+	readyQueue.pop();
+	current.m_startTime = 1;
+
+	// printQueue();
+
+	cout << endl;
 	while(time <= t) {
 		time++;
+		bool flag = false;
+
 		// check if a new process has to be added in the ready queue
 		for(int i=0; i<noOfProcesses; i++) {
 			if(time % P[i].m_period == 0) {
 				readyQueue.push(P[i]);
+				flag = true;
 			}
 		}
 		// sort the ready queue
-		sortQueue();
-
-		// check if burst time is over, else continue excecuting
-		if(time == current.m_bursts) {
-			// Its processing time is over
-			cout << "P" << current.m_id << " " << time << endl;
-		} else {
-			// means current is excecuting
-			current.m_bursts--;
+		if(!readyQueue.empty() && flag) {
+			sortQueue();
 		}
 
-		if(current.m_bursts == 0 && readyQueue.size() != 0) {
-			// If the current process has finished excecuting
-			// and ready queue is not empty
-			current = readyQueue.pop();
-			cout << time << " ";
-		} else if(readyQueue.front().m_period < current.m_period) {
-			// Preempt the process if another higher priority process is present in the ready queue
-			readyQueue.push(current);
-			// sort the ready queue
-			sortQueue();
-			current = readyQueue.pop();
-			cout << time << " ";
+		// check if burst time is over, else continue excecuting
+		if(current.m_burstLeft == 1) {
+			cout << current.m_startTime << " P" << current.m_id << " " << time << endl;
+			current.m_burstLeft--;
+			current.m_isFinished = true;
+		} else {
+			// means current is excecuting if it is not finished
+			if(!current.m_isFinished) {
+				current.m_burstLeft--;
+			}
+		}
+
+		if(!readyQueue.empty()) {
+			if(current.m_burstLeft == 0) {
+				// If the current process has finished excecuting
+				// and ready queue is not empty
+				current = readyQueue.front();
+				readyQueue.pop();
+				current.m_startTime = time;
+			} else if(readyQueue.front().m_period <= current.m_period) {
+				// Preempt the process if another higher priority process is present in the ready queue
+				// If while preempting the new process has same id, then deadline missed
+				if(readyQueue.front().m_id != current.m_id) {
+					// if id is different, then only we push the current process
+					readyQueue.push(current);
+					// sort the ready queue
+					sortQueue();
+				} else {
+					noDeadlinesMissed++;
+				}
+				cout << current.m_startTime << " P" << current.m_id << " " << time << endl;
+				current = readyQueue.front();
+				readyQueue.pop();
+				current.m_startTime = time;
+			}
 		}
 
 	}
+	cout << endl;
+	cout << "Number of deadlines missed: " << noDeadlinesMissed << endl;
 	return 0;
 }
